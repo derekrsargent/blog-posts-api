@@ -1,12 +1,6 @@
-const express = require('express');
 const axios = require('axios');
-const router = express.Router();
 
-router.get('/api/ping', (req, res, next) => {
-    res.status(200).json({ "success": true });
-});
-
-router.get('/api/posts', async (req, res, next) => {
+const postController = async (req, res) => {
     const queryObject = req.query; 
     let tags = [];
     let posts = [];
@@ -64,6 +58,6 @@ router.get('/api/posts', async (req, res, next) => {
     posts.sort(customSort(sortBy));
 
     res.status(200).json({ "posts": posts });
-});
+};
 
-module.exports = router;
+module.exports = postController; 
