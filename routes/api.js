@@ -3,29 +3,28 @@ const axios = require('axios');
 const router = express.Router();
 
 router.get('/api/ping', (req, res, next) => {
-    res.status(200).json({ "success": "true" });
+    res.status(200).json({ "success": true });
 });
 
 router.get('/api/posts', async (req, res, next) => {
     const queryObject = req.query; 
-    console.log(queryObject);
     let tags = [];
     let posts = [];
     let sortBy = 'id',
         direction = 'asc';
 
-    if(!queryObject.tag) {
+    if (!queryObject.tag) {
         return res.status(400).json({ "error": "Tags parameter is required" });
     };
 
-    if(queryObject.sortBy && 
+    if (queryObject.sortBy && 
         queryObject.sortBy !== 'id' &&
         queryObject.sortBy !== 'reads' && 
         queryObject.sortBy !== 'likes' && 
         queryObject.sortBy !== 'popularity'
     ) {
         return res.status(400).json({ "error": "sortBy parameter is invalid" });
-    } else {
+    } else if (queryObject.sortBy) {
         sortBy = queryObject.sortBy; 
     };
 
@@ -34,7 +33,7 @@ router.get('/api/posts', async (req, res, next) => {
         queryObject.direction !== 'desc'
     ) {
         return res.status(400).json({ "error": "direction parameter is invalid" });
-    } else {
+    } else if (queryObject.direction) {
         direction = queryObject.direction;
     };
 
@@ -47,23 +46,20 @@ router.get('/api/posts', async (req, res, next) => {
 
     try {
         const response = await Promise.all(responses);
-
         response
             .map(postsByTag => postsByTag.data.posts
                 .map(el => !checkIfExists(el.id, posts) && posts.push(el)));
-   
     } catch (err) {
         return res.status(500).json({ "error": err.message });
     };
 
-    const customSort= (property) => {
+    const customSort = (property) => {
         const sortDirection = direction === 'asc' ? 1 : -1;
-        
         return function (a,b) {
             const result = (a[property] < b[property]) ? -1 : (a[property] > b[property]) ? 1 : 0;
             return result * sortDirection;
         }
-    }
+    };
 
     posts.sort(customSort(sortBy));
 
