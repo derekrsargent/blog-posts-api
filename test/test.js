@@ -1,6 +1,7 @@
 const server = require('../src/server');
 const chai = require('chai');
 const chaiHttp = require('chai-http');
+const { performance } = require('perf_hooks');
 
 chai.use(chaiHttp);
 
@@ -45,7 +46,7 @@ describe('API Test', function() {
     });
 
     describe('Fetch with an incorrect \'direction\' query string', function() {
-        it('should GET an error message because of no tag', function(done) {
+        it('should GET an error message', function(done) {
             chai.request(uri)
                 .get('/api/posts?tag=tech&direction=none')
                 .end((err, res) => {
@@ -57,7 +58,7 @@ describe('API Test', function() {
     });
 
     describe('Fetch with an incorrect \'sortBy\' query string', function() {
-        it('should GET an error message because of no tag', function(done) {
+        it('should GET an error message', function(done) {
             chai.request(uri)
                 .get('/api/posts?tag=tech&sortBy=none')
                 .end((err, res) => {
@@ -69,7 +70,7 @@ describe('API Test', function() {
     });
 
     describe('Fetch with one tag query string', function() {
-        it('should GET all posts that have a \'tech\' tag in ascending order by default', function(done) {
+        it('should GET all posts that have a \'tech\' tag in ascending order (by default)', function(done) {
             chai.request(uri)
                 .get('/api/posts?tag=tech')
                 .end((err, res) => {
@@ -94,6 +95,25 @@ describe('API Test', function() {
                             directionResult = false;
                     });
                     directionResult.should.be.eql(true);
+
+                    done();
+                });
+        });
+    });
+
+    describe('Fetch with one tag query string', function() {
+        it('should GET all posts that have a \'tech\' tag in ascending order (by default)', function(done) {
+            const t0 = performance.now();
+            chai.request(uri)
+                .get('/api/posts?tag=tech')
+                .end((err, res) => {
+                    // First, check the status
+                    res.should.have.status(200);
+
+                    // Second, check that the tags all include 'tech'
+                    const t1= performance.now();
+
+                    console.log(t1-t0)
 
                     done();
                 });

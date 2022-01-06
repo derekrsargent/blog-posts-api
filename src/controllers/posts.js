@@ -2,10 +2,11 @@ const axios = require('axios');
 
 const postController = async (req, res) => {
     const queryObject = req.query; 
-    let tags = [];
-    let posts = [];
+    let tags = [], 
+        posts = [];
     let sortBy = 'id',
         direction = 'asc';
+    let data; 
 
     if (!queryObject.tag) {
         return res.status(400).json({ "error": "Tags parameter is required" });
@@ -32,14 +33,22 @@ const postController = async (req, res) => {
     };
 
     tags = queryObject.tag.split(',');
-    let responses = tags.map(tag => axios.get(`https://api.hatchways.io/assessment/blog/posts?tag=${tag}`));
+
+    try {
+        data = 
+            tags.map(tag => axios.get(`https://api.hatchways.io/assessment/blog/posts?tag=${tag}`));
+    } catch (err) {
+        return res.status(500).json({ "error": err.message });
+    };
 
     const checkIfExists = (postId, arr) => {
         return arr.some(({id}) => id === postId);
     };
 
+    //const newCache = await caches.open('new-cache');
+
     try {
-        const response = await Promise.all(responses);
+        const response = await Promise.all(data);
         response
             .map(postsByTag => postsByTag.data.posts
                 .map(el => !checkIfExists(el.id, posts) && posts.push(el)));
