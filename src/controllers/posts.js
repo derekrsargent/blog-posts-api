@@ -1,101 +1,90 @@
 const axios = require('axios');
-const { getCachedValue, setCachedValue, getUncachedTags } = require('../services/cache');
+const {
+    getCachedValue,
+    setCachedValue,
+    getUncachedTags,
+} = require('../services/cache');
+const queryStringService = require('../services/api');
 
 const postController = async (req, res) => {
-    const queryObject = req.query; 
+    const queryObject = req.query;
     const cache = req.res.cache;
 
-    let tags = [], 
+    let tags = [],
         posts = [],
-        cachedPosts = [],
-        uncachedPosts = [];
-    let sortBy = 'id',
-        direction = 'asc';
-    let data; 
+        cachedPosts = [];
+    let data, response;
 
-    if (!queryObject.tag) {
-        return res.status(400).json({ "error": "Tags parameter is required" });
-    };
+    const validateQueryString = queryStringService(queryObject);
+    if (!validateQueryString.isValid) {
+        return res
+            .status(400)
+            .json({ error: validateQueryString.errorMessage });
+    }
 
-    if (queryObject.sortBy && 
-        queryObject.sortBy !== 'id' &&
-        queryObject.sortBy !== 'reads' && 
-        queryObject.sortBy !== 'likes' && 
-        queryObject.sortBy !== 'popularity'
-    ) {
-        return res.status(400).json({ "error": "sortBy parameter is invalid" });
-    } else if (queryObject.sortBy) {
-        sortBy = queryObject.sortBy; 
-    };
-
-    if(queryObject.direction &&
-        queryObject.direction !== 'asc' && 
-        queryObject.direction !== 'desc'
-    ) {
-        return res.status(400).json({ "error": "direction parameter is invalid" });
-    } else if (queryObject.direction) {
-        direction = queryObject.direction;
+    const checkIfExists = (postId, arr) => {
+        return arr.some(({ id }) => id === postId);
     };
 
     tags = queryObject.tag.split(',');
 
     const uncachedTagsArr = getUncachedTags(tags, cache);
-    console.log('uncached: ', uncachedTagsArr);
+    const cachedTagsArr = tags.filter((tag) => !uncachedTagsArr.includes(tag));
 
     try {
-        data = 
-            uncachedTagsArr.map(tag => 
-                axios.get(`https://api.hatchways.io/assessment/blog/posts?tag=${tag}`)
-            );
+        data = uncachedTagsArr.map((tag) =>
+            axios.get(
+                `https://api.hatchways.io/assessment/blog/posts?tag=${tag}`
+            )
+        );
     } catch (err) {
-        return res.status(500).json({ "error": err.message });
-    };
+        return res.status(500).json({ error: err.message });
+    }
 
-    const checkIfExists = (postId, arr) => {
-        return arr.some(({id}) => id === postId);
-    };
-
-    let response;
     try {
         response = await Promise.all(data);
-        response
-            .map(postsByTag => postsByTag.data.posts
-                .map(post => !checkIfExists(post.id, posts) && posts.push(post)));
+        response.map((postsByTag) =>
+            postsByTag.data.posts.map(
+                (post) => !checkIfExists(post.id, posts) && posts.push(post)
+            )
+        );
     } catch (err) {
-        return res.status(500).json({ "error": err.message });
-    };
+        return res.status(500).json({ error: err.message });
+    }
 
-    // Add the uncached posts into the cache
+    // Add the uncached posts into the cache.
     try {
-        response.map((postsByTag, index) => setCachedValue(uncachedTagsArr[index], postsByTag.data.posts, cache));
+        response.map((postsByTag, index) =>
+            setCachedValue(uncachedTagsArr[index], postsByTag.data.posts, cache)
+        );
     } catch (err) {
-        return res.status(500).json({ "error": err.message });
-    };
-
-    // --- CACHE
-    const cachedTagsArr = tags.filter(tag => !uncachedTagsArr.includes(tag));
-    console.log('cached: ', cachedTagsArr);
+        return res.status(500).json({ error: err.message });
+    }
 
     // Add the cached posts after the uncached to maximize the most recent results
     // being used.
-    cachedTagsArr.map(tag => cachedPosts.push(getCachedValue(tag, cache)));
-    //console.log(getCachedValue('tech', cache))
-    //console.log(cachedPosts)
-    cachedPosts.map(postsByTag => postsByTag.map(post => !checkIfExists(post.id, posts) && posts.push(post)));
-
-    // ---
+    cachedTagsArr.map((tag) => cachedPosts.push(getCachedValue(tag, cache)));
+    cachedPosts.map((postsByTag) =>
+        postsByTag.map(
+            (post) => !checkIfExists(post.id, posts) && posts.push(post)
+        )
+    );
 
     const customSort = (property) => {
-        const sortDirection = direction === 'asc' ? 1 : -1;
-        return function (a,b) {
-            const result = (a[property] < b[property]) ? -1 : (a[property] > b[property]) ? 1 : 0;
+        const sortDirection = validateQueryString.direction === 'asc' ? 1 : -1;
+        return function (a, b) {
+            const result =
+                a[property] < b[property]
+                    ? -1
+                    : a[property] > b[property]
+                    ? 1
+                    : 0;
             return result * sortDirection;
-        }
+        };
     };
+    posts.sort(customSort(validateQueryString.sortBy));
 
-    posts.sort(customSort(sortBy));
-
-    res.status(200).json({ "posts": posts });
+    res.status(200).json({ posts: posts });
 };
 
-module.exports = postController; 
+module.exports = postController;
