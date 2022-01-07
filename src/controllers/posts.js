@@ -1,9 +1,14 @@
 const axios = require('axios');
+const { getCachedValue, setCachedValue, getUncachedTags } = require('../services/cache');
 
 const postController = async (req, res) => {
     const queryObject = req.query; 
+    const cache = req.res.cache;
+
     let tags = [], 
-        posts = [];
+        posts = [],
+        cachedPosts = [],
+        uncachedPosts = [];
     let sortBy = 'id',
         direction = 'asc';
     let data; 
@@ -34,9 +39,14 @@ const postController = async (req, res) => {
 
     tags = queryObject.tag.split(',');
 
+    const uncachedTagsArr = getUncachedTags(tags, cache);
+    console.log('uncached: ', uncachedTagsArr);
+
     try {
         data = 
-            tags.map(tag => axios.get(`https://api.hatchways.io/assessment/blog/posts?tag=${tag}`));
+            uncachedTagsArr.map(tag => 
+                axios.get(`https://api.hatchways.io/assessment/blog/posts?tag=${tag}`)
+            );
     } catch (err) {
         return res.status(500).json({ "error": err.message });
     };
@@ -45,16 +55,35 @@ const postController = async (req, res) => {
         return arr.some(({id}) => id === postId);
     };
 
-    //const newCache = await caches.open('new-cache');
-
+    let response;
     try {
-        const response = await Promise.all(data);
+        response = await Promise.all(data);
         response
             .map(postsByTag => postsByTag.data.posts
-                .map(el => !checkIfExists(el.id, posts) && posts.push(el)));
+                .map(post => !checkIfExists(post.id, posts) && posts.push(post)));
     } catch (err) {
         return res.status(500).json({ "error": err.message });
     };
+
+    // Add the uncached posts into the cache
+    try {
+        response.map((postsByTag, index) => setCachedValue(uncachedTagsArr[index], postsByTag.data.posts, cache));
+    } catch (err) {
+        return res.status(500).json({ "error": err.message });
+    };
+
+    // --- CACHE
+    const cachedTagsArr = tags.filter(tag => !uncachedTagsArr.includes(tag));
+    console.log('cached: ', cachedTagsArr);
+
+    // Add the cached posts after the uncached to maximize the most recent results
+    // being used.
+    cachedTagsArr.map(tag => cachedPosts.push(getCachedValue(tag, cache)));
+    //console.log(getCachedValue('tech', cache))
+    //console.log(cachedPosts)
+    cachedPosts.map(postsByTag => postsByTag.map(post => !checkIfExists(post.id, posts) && posts.push(post)));
+
+    // ---
 
     const customSort = (property) => {
         const sortDirection = direction === 'asc' ? 1 : -1;

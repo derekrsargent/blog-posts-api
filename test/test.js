@@ -101,7 +101,7 @@ describe('API Test', function() {
         });
     });
 
-    describe('Fetch with one tag query string', function() {
+    describe('Fetch with same tag query string to check cache', function() {
         it('should GET all posts that have a \'tech\' tag in ascending order (by default)', function(done) {
             const t0 = performance.now();
             chai.request(uri)
@@ -110,10 +110,10 @@ describe('API Test', function() {
                     // First, check the status
                     res.should.have.status(200);
 
-                    // Second, check that the tags all include 'tech'
+                    // Lastly, it takes around >300 ms for an API call, so cache will be less
                     const t1= performance.now();
-
-                    console.log(t1-t0)
+                    const time = t1-t0;
+                    time.should.be.lessThan(150);
 
                     done();
                 });
@@ -134,6 +134,51 @@ describe('API Test', function() {
                         if (tagResult === true) {
                             tagResult = post.tags.some(el => el === 'tech') ||
                                 post.tags.some(el => el === 'startups')
+                        }
+                    });
+                    tagResult.should.be.eql(true);
+
+                    //Third, check that there are no duplicates by using a Set
+                    let idResult;
+                    let uniqueIds = new Set(); 
+                    res.body.posts.forEach(post => uniqueIds.add(post.id));
+                    res.body.posts.length === uniqueIds.size ? 
+                        idResult = true : 
+                        idResult = false;
+                    idResult.should.be.eql(true);
+
+                    // Lastly, check for ascending order on id by default
+                    let prevId = -1;
+                    let directionResult = true;
+                    res.body.posts.forEach(post => {
+                        post.id > prevId ? 
+                            prevId = post.id :
+                            directionResult = false;
+                    });
+                    directionResult.should.be.eql(true);
+
+                    done();
+                });
+        });
+    });
+
+    describe('Fetch with five tag query strings', function() {
+        it('should GET all posts that have a \'tech\' OR \'startups\' tag', function(done) {
+            chai.request(uri)
+                .get('/api/posts?tag=tech,startups,science,history,health')
+                .end((err, res) => {
+                    // First, check the status
+                    res.should.have.status(200);
+
+                    // Second, check that the tags include at least one of 'tech' or 'startups'
+                    let tagResult = true;
+                    res.body.posts.forEach(post => {
+                        if (tagResult === true) {
+                            tagResult = post.tags.some(el => el === 'tech') ||
+                                post.tags.some(el => el === 'startups') ||
+                                post.tags.some(el => el === 'science') ||
+                                post.tags.some(el => el === 'history') ||
+                                post.tags.some(el => el === 'health')
                         }
                     });
                     tagResult.should.be.eql(true);
