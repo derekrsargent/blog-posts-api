@@ -50,7 +50,7 @@ describe('API Test', function () {
     describe("Fetch with an incorrect 'direction' query string", function () {
         it('should GET an error message', function (done) {
             chai.request(uri)
-                .get('/api/posts?tag=tech&direction=none')
+                .get('/api/posts?tags=tech&direction=none')
                 .end((err, res) => {
                     res.should.have.status(400);
                     res.body.should.be.eql({
@@ -64,7 +64,7 @@ describe('API Test', function () {
     describe("Fetch with an incorrect 'sortBy' query string", function () {
         it('should GET an error message', function (done) {
             chai.request(uri)
-                .get('/api/posts?tag=tech&sortBy=none')
+                .get('/api/posts?tags=tech&sortBy=none')
                 .end((err, res) => {
                     res.should.have.status(400);
                     res.body.should.be.eql({
@@ -78,7 +78,7 @@ describe('API Test', function () {
     describe('Fetch with one tag query string', function () {
         it("should GET all posts that have a 'tech' tag in ascending order (by default)", function (done) {
             chai.request(uri)
-                .get('/api/posts?tag=tech')
+                .get('/api/posts?tags=tech')
                 .end((err, res) => {
                     // First, check the status
                     res.should.have.status(200);
@@ -111,7 +111,7 @@ describe('API Test', function () {
         it("should GET all posts that have a 'tech' tag in ascending order (by default)", function (done) {
             const t0 = performance.now();
             chai.request(uri)
-                .get('/api/posts?tag=tech')
+                .get('/api/posts?tags=tech')
                 .end((err, res) => {
                     // First, check the status
                     res.should.have.status(200);
@@ -129,7 +129,7 @@ describe('API Test', function () {
     describe('Fetch with two tag query strings', function () {
         it("should GET all posts that have a 'tech' OR 'startups' tag", function (done) {
             chai.request(uri)
-                .get('/api/posts?tag=tech,startups')
+                .get('/api/posts?tags=tech,startups')
                 .end((err, res) => {
                     // First, check the status
                     res.should.have.status(200);
@@ -172,7 +172,7 @@ describe('API Test', function () {
     describe('Fetch with five tag query strings', function () {
         it("should GET all posts that have a 'tech' OR 'startups' tag", function (done) {
             chai.request(uri)
-                .get('/api/posts?tag=tech,startups,science,history,health')
+                .get('/api/posts?tags=tech,startups,science,history,health')
                 .end((err, res) => {
                     // First, check the status
                     res.should.have.status(200);
@@ -218,7 +218,9 @@ describe('API Test', function () {
     describe('Fetch with two tag query strings in desc order by reads', function () {
         it('should GET all posts sorted in desc order by reads', function (done) {
             chai.request(uri)
-                .get('/api/posts?tag=tech,startups&direction=desc&sortBy=reads')
+                .get(
+                    '/api/posts?tags=tech,startups&direction=desc&sortBy=reads'
+                )
                 .end((err, res) => {
                     // First, check the status
                     res.should.have.status(200);

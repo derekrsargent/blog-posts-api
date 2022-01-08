@@ -6,7 +6,7 @@ const queryStringService = (queryString) => {
         sortBy: 'id',
     };
 
-    if (!queryString.tag) {
+    if (!queryString.tags) {
         result.isValid = false;
         result.errorMessage = 'Tags parameter is required';
     }

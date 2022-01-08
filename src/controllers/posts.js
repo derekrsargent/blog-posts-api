@@ -6,6 +6,12 @@ const {
 } = require('../services/cache');
 const queryStringService = require('../services/api');
 
+/** 
+ * 
+ * @TODO Seperate more buisness logic from postController
+ * 
+ * */
+
 const postController = async (req, res) => {
     const queryObject = req.query;
     const cache = req.res.cache;
@@ -26,7 +32,7 @@ const postController = async (req, res) => {
         return arr.some(({ id }) => id === postId);
     };
 
-    tags = queryObject.tag.split(',');
+    tags = queryObject.tags.split(',');
 
     const uncachedTagsArr = getUncachedTags(tags, cache);
     const cachedTagsArr = tags.filter((tag) => !uncachedTagsArr.includes(tag));
@@ -41,16 +47,12 @@ const postController = async (req, res) => {
         return res.status(500).json({ error: err.message });
     }
 
-    try {
-        response = await Promise.all(data);
-        response.map((postsByTag) =>
-            postsByTag.data.posts.map(
-                (post) => !checkIfExists(post.id, posts) && posts.push(post)
-            )
-        );
-    } catch (err) {
-        return res.status(500).json({ error: err.message });
-    }
+    response = await Promise.all(data);
+    response.map((postsByTag) =>
+        postsByTag.data.posts.map(
+            (post) => !checkIfExists(post.id, posts) && posts.push(post)
+        )
+    );
 
     // Add the uncached posts into the cache.
     try {
