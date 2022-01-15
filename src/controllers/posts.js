@@ -8,9 +8,9 @@ const queryStringService = require('../services/api');
 
 /** 
  * 
- * @TODO Seperate more buisness logic from postController
+ * @TODO Seperate more buisness logic from postController into services
  * 
- * */
+ **/
 
 const postController = async (req, res) => {
     const queryObject = req.query;
@@ -40,7 +40,7 @@ const postController = async (req, res) => {
     try {
         data = uncachedTagsArr.map((tag) =>
             axios.get(
-                `https://api.hatchways.io/assessment/blog/posts?tag=${tag}`
+                `<URL>`
             )
         );
     } catch (err) {

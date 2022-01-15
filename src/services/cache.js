@@ -5,7 +5,7 @@
  * @param {Object[]}  posts - All posts for a tag
  * @param {Object}  cache - The api cache
  *
- */
+ **/
 
 const getCachedValue = (tag, cache) => {
     return cache.get(tag);

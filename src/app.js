@@ -4,7 +4,7 @@ const NodeCache = require('node-cache');
 const apiRouter = require('./routes/api');
 
 const app = express(); 
-const cache = new NodeCache({ stdTTL: 30 });
+const cache = new NodeCache({ stdTTL: 300 });
 
 app.use(express.json());
 app.use(cors());

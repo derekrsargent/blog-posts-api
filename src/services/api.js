@@ -1,3 +1,9 @@
+/**
+ *
+ * @param {string}  queryString - The query string object including all fields
+ *
+ **/
+
 const queryStringService = (queryString) => {
     const result = {
         isValid: true,
